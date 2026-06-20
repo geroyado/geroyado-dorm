@@ -14,7 +14,6 @@
     .login-box p { font-size: 13px; color: #888; margin-bottom: 24px; }
     .login-box input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-bottom: 12px; }
     .login-box button { width: 100%; padding: 11px; background: #2c5f8a; color: #fff; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
-    .login-box button:hover { background: #1e4a6e; }
     .login-error { color: #c0392b; font-size: 13px; margin-top: 8px; display: none; }
 
     #main-screen { display: none; }
@@ -23,24 +22,62 @@
     .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; }
     .header-right button { background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-    .tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
-    .tab { padding: 8px 18px; border-radius: 4px 4px 0 0; border: 1px solid #ddd; border-bottom: none; background: #e8e8e8; cursor: pointer; font-size: 13px; }
+    /* タブ均一幅 */
+    .tabs { display: flex; margin-bottom: 0; }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 9px 4px;
+      border-radius: 4px 4px 0 0;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      background: #e8e8e8;
+      cursor: pointer;
+      font-size: 13px;
+      margin-right: 3px;
+    }
+    .tab:last-child { margin-right: 0; }
     .tab.active { background: #fff; font-weight: bold; color: #2c5f8a; }
 
-    .building-panel { background: #fff; border: 1px solid #ddd; border-radius: 0 4px 4px 4px; padding: 20px; display: none; }
+    .building-panel { background: #fff; border: 1px solid #ddd; border-radius: 0 0 4px 4px; padding: 20px; display: none; }
     .building-panel.active { display: block; }
 
-    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-    .room-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.15s; background: #fff; }
+    /* フロア表示：下から上に積み上げ */
+    .floors-container { display: flex; flex-direction: column-reverse; gap: 8px; }
+
+    .floor-row { display: flex; align-items: center; gap: 8px; }
+    .floor-label {
+      width: 36px;
+      min-width: 36px;
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      font-weight: bold;
+    }
+    .floor-rooms { display: flex; gap: 8px; flex-wrap: nowrap; }
+
+    /* 館内は特殊レイアウト */
+    .hotel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+
+    .room-card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #fff;
+      width: 130px;
+      min-width: 130px;
+    }
     .room-card:hover { border-color: #2c5f8a; box-shadow: 0 2px 6px rgba(44,95,138,0.15); }
     .room-card.occupied { background: #eaf2fb; border-color: #aac8e8; }
     .room-card.vacant { background: #fafafa; }
-    .room-number { font-size: 15px; font-weight: bold; margin-bottom: 6px; color: #333; }
-    .room-tenant { font-size: 13px; color: #2c5f8a; font-weight: bold; margin-bottom: 2px; }
+    .room-number { font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #333; }
+    .room-tenant { font-size: 12px; color: #2c5f8a; font-weight: bold; margin-bottom: 2px; }
     .room-dept { font-size: 11px; color: #888; }
-    .room-vacant-label { font-size: 12px; color: #aaa; }
+    .room-vacant-label { font-size: 11px; color: #bbb; }
 
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
@@ -50,7 +87,6 @@
     .modal input, .modal select { width: 100%; padding: 9px 11px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-bottom: 14px; }
     .modal-buttons { display: flex; gap: 8px; margin-top: 4px; }
     .btn-primary { flex: 1; padding: 10px; background: #2c5f8a; color: #fff; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
-    .btn-primary:hover { background: #1e4a6e; }
     .btn-danger { padding: 10px 16px; background: #fff; color: #c0392b; border: 1px solid #c0392b; border-radius: 4px; font-size: 14px; cursor: pointer; }
     .btn-cancel { padding: 10px 16px; background: #fff; color: #666; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; cursor: pointer; }
 
@@ -152,13 +188,47 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  // 棟データ：floorsは上層階から下層階の順で定義（表示は反転して下から上に）
   const BUILDINGS = [
-    { id: "first",   name: "第一コーポ", rooms: ["401","402","403","405","406","407","301","302","303","305","306","307","201","202","203","205","206","207"] },
-    { id: "second",  name: "第二コーポ", rooms: ["301","302","201","202","101","102"] },
-    { id: "hotel",   name: "館内",       rooms: ["317","415","315","316","215","313"] },
-    { id: "third",   name: "第三コーポ", rooms: ["201","202","203","205","206","207","101","102","103","105","106","107"] },
-    { id: "fourth",  name: "第四コーポ", rooms: ["201","202","203","205","206","101","102","103","105","106"] },
-    { id: "laporte", name: "コーポラポール", rooms: [] }
+    {
+      id: "first", name: "第一コーポ",
+      floors: [
+        { label: "4F", rooms: ["401","402","403","405","406","407"] },
+        { label: "3F", rooms: ["301","302","303","305","306","307"] },
+        { label: "2F", rooms: ["201","202","203","205","206","207"] },
+        { label: "1F", rooms: ["101","102","103","105","106","107"] },
+      ]
+    },
+    {
+      id: "second", name: "第二コーポ",
+      floors: [
+        { label: "3F", rooms: ["301","302"] },
+        { label: "2F", rooms: ["201","202"] },
+        { label: "1F", rooms: ["101","102"] },
+      ]
+    },
+    {
+      id: "hotel", name: "館内", hotel: true,
+      rooms: ["415","317","316","315","313","215"]
+    },
+    {
+      id: "third", name: "第三コーポ",
+      floors: [
+        { label: "2F", rooms: ["201","202","203","205","206","207"] },
+        { label: "1F", rooms: ["101","102","103","105","106","107"] },
+      ]
+    },
+    {
+      id: "fourth", name: "第四コーポ",
+      floors: [
+        { label: "2F", rooms: ["201","202","203","205","206"] },
+        { label: "1F", rooms: ["101","102","103","105","106"] },
+      ]
+    },
+    {
+      id: "laporte", name: "コーポラポール",
+      floors: []
+    }
   ];
 
   let currentUser = null;
@@ -167,7 +237,6 @@
   let roomData = {};
   let confirmCallback = null;
 
-  // 認証
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
@@ -183,7 +252,6 @@
     }
   });
 
-  // ログイン
   document.getElementById("login-btn").addEventListener("click", async () => {
     const email = document.getElementById("login-email").value.trim();
     const password = document.getElementById("login-password").value;
@@ -199,10 +267,8 @@
     if (e.key === "Enter") document.getElementById("login-btn").click();
   });
 
-  // ログアウト
   document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
 
-  // 保存ボタン
   document.getElementById("save-btn").addEventListener("click", () => {
     if (!editingRoomId) return;
     const tenant = document.getElementById("edit-tenant").value.trim();
@@ -215,13 +281,12 @@
       `「${prevDesc}」→「${newDesc}」に変更します。よろしいですか？`,
       async () => {
         await setDoc(doc(db, "rooms", editingRoomId), { tenant, dept, note });
-        await addLog(`${editingRoomId} ：${prevDesc} → ${newDesc}`);
+        await addLog(`${editingRoomId}：${prevDesc} → ${newDesc}`);
         closeModal();
       }
     );
   });
 
-  // 空室にするボタン
   document.getElementById("vacate-btn").addEventListener("click", () => {
     if (!editingRoomId) return;
     const prev = roomData[editingRoomId] || {};
@@ -230,16 +295,14 @@
       `${editingRoomId} を空室にします（現在：${prevDesc}）。よろしいですか？`,
       async () => {
         await setDoc(doc(db, "rooms", editingRoomId), { tenant: "", dept: "", note: "" });
-        await addLog(`${editingRoomId} ：${prevDesc} → 空室`);
+        await addLog(`${editingRoomId}：${prevDesc} → 空室`);
         closeModal();
       }
     );
   });
 
-  // キャンセルボタン
   document.getElementById("cancel-btn").addEventListener("click", closeModal);
 
-  // 確認ダイアログ
   document.getElementById("confirm-ok-btn").addEventListener("click", async () => {
     closeConfirm();
     if (confirmCallback) await confirmCallback();
@@ -261,7 +324,6 @@
     editingRoomId = null;
   }
 
-  // UI構築
   function initUI() {
     buildTabs();
     listenRooms();
@@ -273,6 +335,7 @@
     const panelsEl = document.getElementById("panels");
     tabsEl.innerHTML = "";
     panelsEl.innerHTML = "";
+
     BUILDINGS.forEach((b, i) => {
       const tab = document.createElement("div");
       tab.className = "tab" + (i === 0 ? " active" : "");
@@ -283,14 +346,7 @@
       const panel = document.createElement("div");
       panel.className = "building-panel" + (i === 0 ? " active" : "");
       panel.id = "panel-" + b.id;
-      if (b.rooms.length === 0) {
-        panel.innerHTML = '<div style="color:#aaa;font-size:13px;padding:12px;">部屋情報未登録</div>';
-      } else {
-        const grid = document.createElement("div");
-        grid.className = "rooms-grid";
-        grid.id = "grid-" + b.id;
-        panel.appendChild(grid);
-      }
+      panel.innerHTML = '<div style="color:#aaa;font-size:13px;">読み込み中...</div>';
       panelsEl.appendChild(panel);
     });
   }
@@ -312,33 +368,72 @@
     });
   }
 
+  function makeCard(buildingId, buildingName, roomNum) {
+    const roomId = buildingId + "_" + roomNum;
+    const data = roomData[roomId] || {};
+    const card = document.createElement("div");
+    card.className = "room-card " + (data.tenant ? "occupied" : "vacant");
+    card.innerHTML = `
+      <div class="room-number">${roomNum}号室</div>
+      ${data.tenant
+        ? `<div class="room-tenant">${data.tenant}</div><div class="room-dept">${data.dept || ""}</div>`
+        : `<div class="room-vacant-label">空室</div>`}
+      ${data.note ? `<div style="font-size:11px;color:#aaa;margin-top:3px;">${data.note}</div>` : ""}
+    `;
+    card.addEventListener("click", () => {
+      editingRoomId = roomId;
+      document.getElementById("modal-title").textContent = `${buildingName} ${roomNum}号室`;
+      document.getElementById("edit-tenant").value = data.tenant || "";
+      document.getElementById("edit-dept").value = data.dept || "";
+      document.getElementById("edit-note").value = data.note || "";
+      document.getElementById("modal-overlay").classList.add("open");
+    });
+    return card;
+  }
+
   function renderAllRooms() {
     BUILDINGS.forEach(b => {
-      const grid = document.getElementById("grid-" + b.id);
-      if (!grid) return;
-      grid.innerHTML = "";
-      b.rooms.forEach(roomNum => {
-        const roomId = b.id + "_" + roomNum;
-        const data = roomData[roomId] || {};
-        const card = document.createElement("div");
-        card.className = "room-card " + (data.tenant ? "occupied" : "vacant");
-        card.innerHTML = `
-          <div class="room-number">${roomNum}号室</div>
-          ${data.tenant
-            ? `<div class="room-tenant">${data.tenant}</div><div class="room-dept">${data.dept || ""}</div>`
-            : `<div class="room-vacant-label">空室</div>`}
-          ${data.note ? `<div style="font-size:11px;color:#aaa;margin-top:4px;">${data.note}</div>` : ""}
-        `;
-        card.addEventListener("click", () => {
-          editingRoomId = roomId;
-          document.getElementById("modal-title").textContent = `${b.name} ${roomNum}号室`;
-          document.getElementById("edit-tenant").value = data.tenant || "";
-          document.getElementById("edit-dept").value = data.dept || "";
-          document.getElementById("edit-note").value = data.note || "";
-          document.getElementById("modal-overlay").classList.add("open");
-        });
-        grid.appendChild(card);
+      const panel = document.getElementById("panel-" + b.id);
+      if (!panel) return;
+      panel.innerHTML = "";
+
+      // 館内は特殊
+      if (b.hotel) {
+        const grid = document.createElement("div");
+        grid.className = "hotel-grid";
+        b.rooms.forEach(roomNum => grid.appendChild(makeCard(b.id, b.name, roomNum)));
+        panel.appendChild(grid);
+        return;
+      }
+
+      // 部屋なし
+      if (!b.floors || b.floors.length === 0) {
+        panel.innerHTML = '<div style="color:#aaa;font-size:13px;padding:12px;">部屋情報未登録</div>';
+        return;
+      }
+
+      // フロアを下から上に積み上げ（floors配列は上から下の順なのでreverseして表示）
+      const container = document.createElement("div");
+      container.className = "floors-container";
+
+      [...b.floors].reverse().forEach(floor => {
+        const row = document.createElement("div");
+        row.className = "floor-row";
+
+        const label = document.createElement("div");
+        label.className = "floor-label";
+        label.textContent = floor.label;
+        row.appendChild(label);
+
+        const roomsDiv = document.createElement("div");
+        roomsDiv.className = "floor-rooms";
+        floor.rooms.forEach(roomNum => roomsDiv.appendChild(makeCard(b.id, b.name, roomNum)));
+        row.appendChild(roomsDiv);
+
+        container.appendChild(row);
       });
+
+      panel.appendChild(container);
     });
   }
 
