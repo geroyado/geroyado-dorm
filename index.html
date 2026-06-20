@@ -24,7 +24,6 @@
 
     .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-    /* タブ均一幅 */
     .tabs { display: flex; margin-bottom: 0; }
     .tab {
       flex: 1;
@@ -44,22 +43,11 @@
     .building-panel { background: #fff; border: 1px solid #ddd; border-radius: 0 0 4px 4px; padding: 20px; display: none; }
     .building-panel.active { display: block; }
 
-    /* フロア表示：下から上に積み上げ */
     .floors-container { display: flex; flex-direction: column-reverse; gap: 8px; }
 
     .floor-row { display: flex; align-items: center; gap: 8px; }
-    .floor-label {
-      width: 36px;
-      min-width: 36px;
-      font-size: 12px;
-      color: #888;
-      text-align: center;
-      font-weight: bold;
-    }
+    .floor-label { width: 36px; min-width: 36px; font-size: 12px; color: #888; text-align: center; font-weight: bold; }
     .floor-rooms { display: flex; gap: 8px; flex-wrap: nowrap; }
-
-    /* 館内は特殊レイアウト */
-    .hotel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
 
     .room-card {
       border: 1px solid #ddd;
@@ -188,7 +176,6 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // 棟データ：floorsは上層階から下層階の順で定義（表示は反転して下から上に）
   const BUILDINGS = [
     {
       id: "first", name: "第一コーポ",
@@ -208,10 +195,6 @@
       ]
     },
     {
-      id: "hotel", name: "館内", hotel: true,
-      rooms: ["415","317","316","315","313","215"]
-    },
-    {
       id: "third", name: "第三コーポ",
       floors: [
         { label: "2F", rooms: ["201","202","203","205","206","207"] },
@@ -223,6 +206,14 @@
       floors: [
         { label: "2F", rooms: ["201","202","203","205","206"] },
         { label: "1F", rooms: ["101","102","103","105","106"] },
+      ]
+    },
+    {
+      id: "hotel", name: "下呂観光ホテル館内",
+      floors: [
+        { label: "4F", rooms: ["415"] },
+        { label: "3F", rooms: ["313","315","316","317"] },
+        { label: "2F", rooms: ["215"] },
       ]
     },
     {
@@ -397,22 +388,11 @@
       if (!panel) return;
       panel.innerHTML = "";
 
-      // 館内は特殊
-      if (b.hotel) {
-        const grid = document.createElement("div");
-        grid.className = "hotel-grid";
-        b.rooms.forEach(roomNum => grid.appendChild(makeCard(b.id, b.name, roomNum)));
-        panel.appendChild(grid);
-        return;
-      }
-
-      // 部屋なし
       if (!b.floors || b.floors.length === 0) {
         panel.innerHTML = '<div style="color:#aaa;font-size:13px;padding:12px;">部屋情報未登録</div>';
         return;
       }
 
-      // フロアを下から上に積み上げ（floors配列は上から下の順なのでreverseして表示）
       const container = document.createElement("div");
       container.className = "floors-container";
 
@@ -446,7 +426,7 @@
   }
 
   function listenLogs() {
-    const q = query(collection(db, "logs"), orderBy("createdAt", "desc"), limit(30));
+    const q = query(collection(db, "logs"), orderBy("createdAt", "desc"), limit(20));
     onSnapshot(q, (snapshot) => {
       const listEl = document.getElementById("log-list");
       if (snapshot.empty) {
