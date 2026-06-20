@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>社員寮管理システム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    /* ===== ログイン画面 ===== */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: #fff;
+      border-radius: 8px;
+      padding: 40px;
+      width: 360px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+
+    .login-box h1 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #222;
+    }
+
+    .login-box p {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 24px;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .login-box button {
+      width: 100%;
+      padding: 11px;
+      background: #2c5f8a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .login-box button:hover { background: #1e4a6e; }
+
+    .login-error {
+      color: #c0392b;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* ===== メイン画面 ===== */
+    #main-screen { display: none; }
+
+    header {
+      background: #2c5f8a;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 { font-size: 16px; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .header-right button {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* ===== 棟タブ ===== */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 8px 18px;
+      border-radius: 4px 4px 0 0;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      background: #e8e8e8;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .tab.active {
+      background: #fff;
+      border-bottom: 1px solid #fff;
+      font-weight: bold;
+      color: #2c5f8a;
+    }
+
+    /* ===== 部屋グリッド ===== */
+    .building-panel {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 0 4px 4px 4px;
+      padding: 20px;
+      display: none;
+    }
+
+    .building-panel.active { display: block; }
+
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .room-card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #fff;
+    }
+
+    .room-card:hover { border-color: #2c5f8a; box-shadow: 0 2px 6px rgba(44,95,138,0.15); }
+
+    .room-card.occupied {
+      background: #eaf2fb;
+      border-color: #aac8e8;
+    }
+
+    .room-card.vacant {
+      background: #fafafa;
+    }
+
+    .room-number {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #333;
+    }
+
+    .room-tenant {
+      font-size: 13px;
+      color: #2c5f8a;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .room-dept {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .room-vacant-label {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* ===== モーダル ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 28px;
+      width: 360px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal h2 {
+      font-size: 16px;
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .modal input, .modal select {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      padding: 10px;
+      background: #2c5f8a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover { background: #1e4a6e; }
+
+    .btn-danger {
+      padding: 10px 16px;
+      background: #fff;
+      color: #c0392b;
+      border: 1px solid #c0392b;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn-danger:hover { background: #fdf0ef; }
+
+    .btn-cancel {
+      padding: 10px 16px;
+      background: #fff;
+      color: #666;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ===== 確認ダイアログ ===== */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .confirm-overlay.open { display: flex; }
+
+    .confirm-box {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      width: 320px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .confirm-box p {
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .confirm-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* ===== 更新ログ ===== */
+    .log-section {
+      margin-top: 24px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .log-section h3 {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .log-list {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.8;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .log-item {
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      gap: 12px;
+    }
+
+    .log-item:last-child { border-bottom: none; }
+
+    .log-time { color: #aaa; white-space: nowrap; min-width: 130px; }
+    .log-user { color: #2c5f8a; min-width: 60px; }
+    .log-text { flex: 1; }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>社員寮管理システム</h1>
+    <p>下呂観光ホテル</p>
+    <input type="email" id="login-email" placeholder="メールアドレス" />
+    <input type="password" id="login-password" placeholder="パスワード" />
+    <button onclick="doLogin()">ログイン</button>
+    <div class="login-error" id="login-error">メールアドレスまたはパスワードが正しくありません</div>
+  </div>
+</div>
+
+<!-- メイン画面 -->
+<div id="main-screen">
+  <header>
+    <h1>社員寮管理システム</h1>
+    <div class="header-right">
+      <span id="current-user-name"></span>
+      <button onclick="doLogout()">ログアウト</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="tabs" id="tabs"></div>
+    <div id="panels">
+      <div class="loading">読み込み中...</div>
+    </div>
+
+    <!-- 更新ログ -->
+    <div class="log-section">
+      <h3>📋 最近の変更履歴</h3>
+      <div class="log-list" id="log-list">
+        <div style="color:#aaa; font-size:12px;">読み込み中...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">部屋情報の編集</h2>
+    <label>入居者名</label>
+    <input type="text" id="edit-tenant" placeholder="空室の場合は空欄" />
+    <label>所属</label>
+    <select id="edit-dept">
+      <option value="">（未選択）</option>
+      <option value="本館">本館</option>
+      <option value="しょうげつ">しょうげつ</option>
+      <option value="共通">共通</option>
+    </select>
+    <label>備考</label>
+    <input type="text" id="edit-note" placeholder="任意" />
+    <div class="modal-buttons">
+      <button class="btn-primary" onclick="saveRoom()">保存</button>
+      <button class="btn-danger" onclick="confirmVacate()">空室にする</button>
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- 確認ダイアログ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <p id="confirm-message"></p>
+    <div class="confirm-buttons">
+      <button class="btn-cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn-primary" id="confirm-ok-btn">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ===== Firebase設定 =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUc6NvDGpPBaYSuPNxYfJgfA50Xioa0Pw",
+    authDomain: "geroyado-dorm.firebaseapp.com",
+    projectId: "geroyado-dorm",
+    storageBucket: "geroyado-dorm.firebasestorage.app",
+    messagingSenderId: "1005916677759",
+    appId: "1:1005916677759:web:2dba2aad121bc9b369014a",
+    measurementId: "G-Z8R4XJ5SQP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ===== 棟・部屋マスタ =====
+  const BUILDINGS = [
+    {
+      id: "first", name: "第一コーポ",
+      rooms: ["401","402","403","405","406","407","301","302","303","305","306","307","201","202","203","205","206","207"]
+    },
+    {
+      id: "second", name: "第二コーポ",
+      rooms: ["301","302","201","202","101","102"]
+    },
+    {
+      id: "hotel", name: "館内",
+      rooms: ["317","415","315","316","215","313"]
+    },
+    {
+      id: "third", name: "第三コーポ",
+      rooms: ["201","202","203","205","206","207","101","102","103","105","106","107"]
+    },
+    {
+      id: "fourth", name: "第四コーポ",
+      rooms: ["201","202","203","205","206","101","102","103","105","106"]
+    },
+    {
+      id: "laporte", name: "コーポラポール",
+      rooms: []
+    }
+  ];
+
+  let currentUser = null;
+  let currentUserName = "";
+  let editingRoomId = null;
+  let roomData = {};
+  let confirmCallback = null;
+
+  // ===== 認証状態監視 =====
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      // ユーザー名をFirestoreから取得
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      currentUserName = userDoc.exists() ? userDoc.data().name : user.email;
+      document.getElementById("current-user-name").textContent = currentUserName;
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("main-screen").style.display = "block";
+      initUI();
+    } else {
+      currentUser = null;
+      document.getElementById("login-screen").style.display = "flex";
+      document.getElementById("main-screen").style.display = "none";
+    }
+  });
+
+  // ===== ログイン =====
+  window.doLogin = async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+    const errEl = document.getElementById("login-error");
+    errEl.style.display = "none";
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      errEl.style.display = "block";
+    }
+  };
+
+  window.doLogout = async () => {
+    await signOut(auth);
+  };
+
+  // ===== UI初期化 =====
+  function initUI() {
+    buildTabs();
+    listenRooms();
+    listenLogs();
+  }
+
+  function buildTabs() {
+    const tabsEl = document.getElementById("tabs");
+    const panelsEl = document.getElementById("panels");
+    tabsEl.innerHTML = "";
+    panelsEl.innerHTML = "";
+
+    BUILDINGS.forEach((b, i) => {
+      const tab = document.createElement("div");
+      tab.className = "tab" + (i === 0 ? " active" : "");
+      tab.textContent = b.name;
+      tab.onclick = () => switchTab(b.id);
+      tabsEl.appendChild(tab);
+
+      const panel = document.createElement("div");
+      panel.className = "building-panel" + (i === 0 ? " active" : "");
+      panel.id = "panel-" + b.id;
+
+      if (b.rooms.length === 0) {
+        panel.innerHTML = '<div style="color:#aaa;font-size:13px;padding:12px;">部屋情報未登録</div>';
+      } else {
+        const grid = document.createElement("div");
+        grid.className = "rooms-grid";
+        grid.id = "grid-" + b.id;
+        panel.appendChild(grid);
+      }
+      panelsEl.appendChild(panel);
+    });
+  }
+
+  function switchTab(buildingId) {
+    document.querySelectorAll(".tab").forEach((t, i) => {
+      t.classList.toggle("active", BUILDINGS[i].id === buildingId);
+    });
+    document.querySelectorAll(".building-panel").forEach(p => {
+      p.classList.toggle("active", p.id === "panel-" + buildingId);
+    });
+  }
+
+  // ===== 部屋データ リアルタイム監視 =====
+  function listenRooms() {
+    onSnapshot(collection(db, "rooms"), (snapshot) => {
+      roomData = {};
+      snapshot.forEach(d => { roomData[d.id] = d.data(); });
+      renderAllRooms();
+    });
+  }
+
+  function renderAllRooms() {
+    BUILDINGS.forEach(b => {
+      const grid = document.getElementById("grid-" + b.id);
+      if (!grid) return;
+      grid.innerHTML = "";
+      b.rooms.forEach(roomNum => {
+        const roomId = b.id + "_" + roomNum;
+        const data = roomData[roomId] || {};
+        const card = document.createElement("div");
+        card.className = "room-card " + (data.tenant ? "occupied" : "vacant");
+        card.innerHTML = `
+          <div class="room-number">${roomNum}号室</div>
+          ${data.tenant
+            ? `<div class="room-tenant">${data.tenant}</div><div class="room-dept">${data.dept || ""}</div>`
+            : `<div class="room-vacant-label">空室</div>`
+          }
+          ${data.note ? `<div style="font-size:11px;color:#aaa;margin-top:4px;">${data.note}</div>` : ""}
+        `;
+        card.onclick = () => openModal(roomId, b.name, roomNum, data);
+        grid.appendChild(card);
+      });
+    });
+  }
+
+  // ===== モーダル =====
+  window.openModal = (roomId, buildingName, roomNum, data) => {
+    editingRoomId = roomId;
+    document.getElementById("modal-title").textContent = `${buildingName} ${roomNum}号室`;
+    document.getElementById("edit-tenant").value = data.tenant || "";
+    document.getElementById("edit-dept").value = data.dept || "";
+    document.getElementById("edit-note").value = data.note || "";
+    document.getElementById("modal-overlay").classList.add("open");
+  };
+
+  window.closeModal = () => {
+    document.getElementById("modal-overlay").classList.remove("open");
+    editingRoomId = null;
+  };
+
+  window.saveRoom = async () => {
+    if (!editingRoomId) return;
+    const tenant = document.getElementById("edit-tenant").value.trim();
+    const dept = document.getElementById("edit-dept").value;
+    const note = document.getElementById("edit-note").value.trim();
+
+    const prev = roomData[editingRoomId] || {};
+    const prevDesc = prev.tenant ? `${prev.tenant}（${prev.dept || ""}）` : "空室";
+    const newDesc = tenant ? `${tenant}（${dept}）` : "空室";
+
+    showConfirm(
+      `「${prevDesc}」→「${newDesc}」に変更します。よろしいですか？`,
+      async () => {
+        await setDoc(doc(db, "rooms", editingRoomId), { tenant, dept, note });
+        await addLog(`${editingRoomId.replace("_", " ")}号室：${prevDesc} → ${newDesc}`);
+        closeModal();
+      }
+    );
+  };
+
+  window.confirmVacate = () => {
+    const prev = roomData[editingRoomId] || {};
+    const prevDesc = prev.tenant ? `${prev.tenant}（${prev.dept || ""}）` : "空室";
+    showConfirm(
+      `${editingRoomId.replace("_", " ")}号室を空室にします（${prevDesc}）。よろしいですか？`,
+      async () => {
+        await setDoc(doc(db, "rooms", editingRoomId), { tenant: "", dept: "", note: "" });
+        await addLog(`${editingRoomId.replace("_", " ")}号室：${prevDesc} → 空室`);
+        closeModal();
+      }
+    );
+  };
+
+  // ===== 確認ダイアログ =====
+  function showConfirm(message, callback) {
+    confirmCallback = callback;
+    document.getElementById("confirm-message").textContent = message;
+    document.getElementById("confirm-ok-btn").onclick = async () => {
+      closeConfirm();
+      if (confirmCallback) await confirmCallback();
+    };
+    document.getElementById("confirm-overlay").classList.add("open");
+  }
+
+  window.closeConfirm = () => {
+    document.getElementById("confirm-overlay").classList.remove("open");
+    confirmCallback = null;
+  };
+
+  // ===== ログ =====
+  async function addLog(text) {
+    await addDoc(collection(db, "logs"), {
+      user: currentUserName,
+      text,
+      createdAt: serverTimestamp()
+    });
+  }
+
+  function listenLogs() {
+    const q = query(collection(db, "logs"), orderBy("createdAt", "desc"), limit(30));
+    onSnapshot(q, (snapshot) => {
+      const listEl = document.getElementById("log-list");
+      if (snapshot.empty) {
+        listEl.innerHTML = '<div style="color:#aaa;">変更履歴はありません</div>';
+        return;
+      }
+      listEl.innerHTML = "";
+      snapshot.forEach(d => {
+        const data = d.data();
+        const time = data.createdAt
+          ? new Date(data.createdAt.toDate()).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" })
+          : "—";
+        const item = document.createElement("div");
+        item.className = "log-item";
+        item.innerHTML = `
+          <span class="log-time">${time}</span>
+          <span class="log-user">${data.user || ""}</span>
+          <span class="log-text">${data.text || ""}</span>
+        `;
+        listEl.appendChild(item);
+      });
+    });
+  }
+
+  // Enterキーでログイン
+  document.getElementById("login-password").addEventListener("keydown", e => {
+    if (e.key === "Enter") window.doLogin();
+  });
+</script>
+
+</body>
+</html>
