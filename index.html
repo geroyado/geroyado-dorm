@@ -60,7 +60,9 @@
       min-width: 130px;
     }
     .room-card:hover { border-color: #2c5f8a; box-shadow: 0 2px 6px rgba(44,95,138,0.15); }
-    .room-card.occupied { background: #eaf2fb; border-color: #aac8e8; }
+    .room-card.occupied-honkan  { background: #eaf2fb; border-color: #aac8e8; }
+    .room-card.occupied-shougetsu { background: #fdecea; border-color: #e8aaaa; }
+    .room-card.occupied-unusable { background: #e8e8e8; border-color: #aaaaaa; }
     .room-card.vacant { background: #fafafa; }
     .room-number { font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #333; }
     .room-tenant { font-size: 12px; color: #2c5f8a; font-weight: bold; margin-bottom: 2px; }
@@ -135,7 +137,7 @@
       <option value="">（未選択）</option>
       <option value="本館">本館</option>
       <option value="しょうげつ">しょうげつ</option>
-      <option value="共通">共通</option>
+      <option value="使用不可">使用不可</option>
     </select>
     <label>備考</label>
     <input type="text" id="edit-note" placeholder="任意" />
@@ -363,7 +365,11 @@
     const roomId = buildingId + "_" + roomNum;
     const data = roomData[roomId] || {};
     const card = document.createElement("div");
-    card.className = "room-card " + (data.tenant ? "occupied" : "vacant");
+    const colorClass = !data.tenant ? "vacant"
+      : data.dept === "しょうげつ" ? "occupied-shougetsu"
+      : data.dept === "使用不可" ? "occupied-unusable"
+      : "occupied-honkan";
+    card.className = "room-card " + colorClass;
     card.innerHTML = `
       <div class="room-number">${roomNum}号室</div>
       ${data.tenant
